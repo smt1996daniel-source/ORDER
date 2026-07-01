@@ -653,27 +653,33 @@
 {d: "128321", t: "מכנסון ירכיים נשים חגורה רחבה סנטוני שחור גוף על קולב ", b: "7297028229343", m: "S-M/30 L-XL/30 XXL/18", c: "78.0", p: "9"}];
 
         const tbody = document.getElementById('tableBody');
-        let html = '';
-        items.forEach(item => {
-            const searchKey = (item.d + " " + item.t + " " + item.b).toLowerCase();
-            html += `<tr data-search="${searchKey}" style="display:none">
-            <td data-label="דגם">${item.d}</td>
-            <td data-label="תיאור">${item.t}</td>
-            <td data-label="ברקוד">${item.b}</td>
-            <td data-label="מינון">${item.m}</td>
-            <td data-label="קופסא">${item.c}</td>
-            <td data-label="מחיר">${item.p}</td>
-            <td data-label="הזמנה"><input type="text" class="order-input" placeholder="כמות/הערות"></td></tr>`;
-        });
-        tbody.innerHTML = html;
+        let tableBuilt = false;
+
+        function buildTable() {
+            if (tableBuilt) return;
+            let html = '';
+            items.forEach(item => {
+                const searchKey = (item.d + " " + item.t + " " + item.b).toLowerCase();
+                html += `<tr data-search="${searchKey}" style="display:none">
+                <td data-label="דגם">${item.d}</td>
+                <td data-label="תיאור">${item.t}</td>
+                <td data-label="ברקוד">${item.b}</td>
+                <td data-label="מינון">${item.m}</td>
+                <td data-label="קופסא">${item.c}</td>
+                <td data-label="מחיר">${item.p}</td>
+                <td data-label="הזמנה"><input type="text" class="order-input" placeholder="כמות/הערות"></td></tr>`;
+            });
+            tbody.innerHTML = html;
+            tableBuilt = true;
+        }
 
         const hint = document.getElementById('searchHint');
 
         let allVisible = false;
 
         function toggleAll() {
+            buildTable();
             const btn = document.getElementById('toggleBtn');
-            const hint = document.getElementById('searchHint');
             allVisible = !allVisible;
             document.getElementById('searchBox').value = "";
             document.querySelectorAll('#orderTable tbody tr').forEach(tr => tr.style.display = allVisible ? "" : "none");
@@ -685,16 +691,19 @@
 
         function filterItems() {
             const q = document.getElementById('searchBox').value.trim().toLowerCase();
-            const rows = document.querySelectorAll('#orderTable tbody tr');
             if (q.length < 2) {
-                rows.forEach(tr => tr.style.display = "none");
+                if (tableBuilt) document.querySelectorAll('#orderTable tbody tr').forEach(tr => tr.style.display = "none");
                 hint.style.display = "block";
-                hint.textContent = "הקלד לפחות 2 תווים לחיפוש...";
+                hint.textContent = q.length === 0 ? "חפש מוצר או לחץ \"הצג הכל\"" : "הקלד לפחות 2 תווים...";
+                allVisible = false;
+                document.getElementById('toggleBtn').textContent = "הצג הכל";
+                document.getElementById('toggleBtn').style.background = "#007bff";
                 return;
             }
+            buildTable();
             hint.style.display = "none";
             let count = 0;
-            rows.forEach(tr => {
+            document.querySelectorAll('#orderTable tbody tr').forEach(tr => {
                 const match = tr.getAttribute('data-search').includes(q);
                 tr.style.display = match ? "" : "none";
                 if (match) count++;
@@ -705,20 +714,29 @@
             }
         }
 
+        // מילון לשמירת כמויות לפי ברקוד - עדכון בכל שינוי בשדה
+        const orderValues = {};
+
+        document.addEventListener('input', function(e) {
+            if (e.target.classList.contains('order-input')) {
+                const tr = e.target.closest('tr');
+                const barcode = tr.querySelector('td[data-label="ברקוד"]').innerText;
+                orderValues[barcode] = e.target.value;
+            }
+        });
+
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvZq4Fz5cFOLcWNsjYtXxHHwCGUjLxzb8VgRMz-p-o8vp-TBxz9DZ9RxDQ_cbJp8T6_w/exec";
 
         function exportCSV() {
             let cust = document.getElementById('customerId').value.trim();
             let hasOrder = false;
 
+            // אוסף ישירות מה-items array - לא תלוי ב-DOM
             let rows = [["דגם","תיאור","ברקוד","מינון","קופסא","מחיר","הזמנה"]];
-            document.querySelectorAll('#orderTable tbody tr').forEach(tr => {
-                let cells = Array.from(tr.querySelectorAll('td'));
-                let rowData = cells.slice(0, 6).map(td => td.innerText);
-                let val = tr.querySelector('input').value;
+            items.forEach(item => {
+                const val = orderValues[item.b] || "";
                 if (val.trim() !== "") hasOrder = true;
-                rowData.push(val);
-                rows.push(rowData);
+                rows.push([item.d, item.t, item.b, item.m, item.c, item.p, val]);
             });
 
             if (!hasOrder) {
@@ -756,6 +774,7 @@
         function resetOrderForm() {
             document.getElementById('customerId').value = "";
             document.querySelectorAll('#orderTable .order-input').forEach(inp => inp.value = "");
+            Object.keys(orderValues).forEach(k => delete orderValues[k]);
         }
 
     </script>
