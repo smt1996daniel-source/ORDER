@@ -107,6 +107,8 @@
     <h1>מערכת הזמנות</h1>
     <input type="text" id="customerId" placeholder="הקש מס' לקוח...">
     <input type="text" id="searchBox" placeholder="חיפוש לפי דגם, תיאור או ברקוד..." oninput="filterItems()">
+    <button id="toggleBtn" onclick="toggleAll()" style="width:100%; padding:10px; margin-bottom:10px; background:#007bff; color:white; border:none; border-radius:6px; font-size:15px; cursor:pointer;">הצג הכל</button>
+    <p id="searchHint" style="text-align:center; color:#888; margin:20px 0; font-size:15px;">חפש מוצר או לחץ "הצג הכל"</p>
     <div class="table-wrapper">
         <table id="orderTable">
             <thead><tr><th>דגם</th><th>תיאור</th><th>ברקוד</th><th>מינון</th><th>קופסא</th><th>מחיר</th><th>הזמנה</th></tr></thead>
@@ -654,7 +656,7 @@
         let html = '';
         items.forEach(item => {
             const searchKey = (item.d + " " + item.t + " " + item.b).toLowerCase();
-            html += `<tr data-search="${searchKey}">
+            html += `<tr data-search="${searchKey}" style="display:none">
             <td data-label="דגם">${item.d}</td>
             <td data-label="תיאור">${item.t}</td>
             <td data-label="ברקוד">${item.b}</td>
@@ -665,15 +667,42 @@
         });
         tbody.innerHTML = html;
 
+        const hint = document.getElementById('searchHint');
+
+        let allVisible = false;
+
+        function toggleAll() {
+            const btn = document.getElementById('toggleBtn');
+            const hint = document.getElementById('searchHint');
+            allVisible = !allVisible;
+            document.getElementById('searchBox').value = "";
+            document.querySelectorAll('#orderTable tbody tr').forEach(tr => tr.style.display = allVisible ? "" : "none");
+            btn.textContent = allVisible ? "הסתר הכל" : "הצג הכל";
+            btn.style.background = allVisible ? "#6c757d" : "#007bff";
+            hint.style.display = allVisible ? "none" : "block";
+            hint.textContent = "חפש מוצר או לחץ \"הצג הכל\"";
+        }
+
         function filterItems() {
             const q = document.getElementById('searchBox').value.trim().toLowerCase();
             const rows = document.querySelectorAll('#orderTable tbody tr');
-            let visibleCount = 0;
+            if (q.length < 2) {
+                rows.forEach(tr => tr.style.display = "none");
+                hint.style.display = "block";
+                hint.textContent = "הקלד לפחות 2 תווים לחיפוש...";
+                return;
+            }
+            hint.style.display = "none";
+            let count = 0;
             rows.forEach(tr => {
-                const match = q === "" || tr.getAttribute('data-search').includes(q);
+                const match = tr.getAttribute('data-search').includes(q);
                 tr.style.display = match ? "" : "none";
-                if (match) visibleCount++;
+                if (match) count++;
             });
+            if (count === 0) {
+                hint.style.display = "block";
+                hint.textContent = "לא נמצאו תוצאות";
+            }
         }
 
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxvZq4Fz5cFOLcWNsjYtXxHHwCGUjLxzb8VgRMz-p-o8vp-TBxz9DZ9RxDQ_cbJp8T6_w/exec";
