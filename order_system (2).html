@@ -731,12 +731,14 @@
             let cust = document.getElementById('customerId').value.trim();
             let hasOrder = false;
 
-            // אוסף ישירות מה-items array - לא תלוי ב-DOM
+            // אוסף רק שורות שמולאה בהן כמות
             let rows = [["דגם","תיאור","ברקוד","מינון","קופסא","מחיר","הזמנה"]];
             items.forEach(item => {
                 const val = orderValues[item.b] || "";
-                if (val.trim() !== "") hasOrder = true;
-                rows.push([item.d, item.t, item.b, item.m, item.c, item.p, val]);
+                if (val.trim() !== "") {
+                    hasOrder = true;
+                    rows.push([item.d, item.t, item.b, item.m, item.c, item.p, val]);
+                }
             });
 
             if (!hasOrder) {
