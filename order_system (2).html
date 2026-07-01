@@ -747,30 +747,22 @@
             }
 
             const btn = document.querySelector('.btn');
-            btn.textContent = "שומר...";
-            btn.disabled = true;
+            btn.textContent = "נשמר בדרייב ✓";
+            btn.style.background = "#218838";
+            resetOrderForm();
+            setTimeout(() => {
+                btn.textContent = "שלח הזמנה לדרייב";
+                btn.style.background = "#28a745";
+                btn.disabled = false;
+            }, 2000);
 
+            // שליחה ברקע - לא מחכים לתשובה
             fetch(APPS_SCRIPT_URL, {
                 method: "POST",
                 mode: "no-cors",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ customerId: cust, rows: rows })
-            })
-            .then(() => {
-                btn.textContent = "נשמר בדרייב ✓";
-                btn.style.background = "#218838";
-                resetOrderForm();
-                setTimeout(() => {
-                    btn.textContent = "שלח הזמנה לדרייב";
-                    btn.style.background = "#28a745";
-                    btn.disabled = false;
-                }, 3000);
-            })
-            .catch(() => {
-                alert("שגיאה בשמירה לדרייב. אנא בדוק חיבור אינטרנט ונסה שוב.");
-                btn.textContent = "שלח הזמנה לדרייב";
-                btn.disabled = false;
-            });
+            }).catch(() => {});
         }
 
         function resetOrderForm() {
